@@ -1,0 +1,109 @@
+---
+
+- set_fact:
+    local_home: "{{ lookup('env','HOME') }}"
+
+- name: Get status of the opt_path
+  stat: path={{ opt_path }}
+  connection: local
+  register: stat_opt_path
+
+- fail: msg="opt_path does not exist"
+  when: (stat_opt_path.stat.exists is defined and stat_opt_path.stat.exists|bool == false)
+
+- name: Kill old folders
+  connection: local
+  file: path={{ oracle_path }} state=absent
+  become: true
+
+- name: Create folders (local)
+  connection: local
+  file: path={{ item }} state=directory
+  become: true
+  with_items:
+    - "{{ oracle_include_path }}"
+
+  register: local_folders
+
+#- debug: var=local_folders
+
+- set_fact:
+    filenames: []
+
+- set_fact:
+    filenames: "{{ filenames }} + [ 'instantclient-{{item}}-{{dist}}.{{arch}}-{{version}}.zip' ]"
+  with_items: "{{packages}}"
+
+- debug: var=filenames
+
+- name: Unarchive client files
+  connection: local
+  unarchive:  src="{{ client_path }}/{{ item }}" dest="{{ oracle_path }}"
+  with_items: "{{ filenames }}"
+  when: dist is defined and arch is defined
+  become: true
+
+- name: Make TNS_ADMIN directory
+  connection: local
+  file:  path={{ tns_admin_path }} state=directory
+  become: true
+
+
+# - name: Link .ora files
+#   connection: local
+#   file:  src="{{ local_home }}/Documents/{{ item }}" dest="{{ tns_admin_path }}/{{ item }}" state=link
+#   with_items:
+#     - tnsnames.ora
+#     - sqlnet.ora
+#   become: true
+
+- name: Setting shell type
+  set_fact:
+    shell_type: "/bin/bash"
+
+- name: Set library file when bash
+  set_fact:
+    rc_file: "{{ local_home }}/.bashrc"
+  when: shell_type is defined and shell_type == "/bin/bash"
+
+#- debug: var=rc_file
+
+- name: Set sudoers file
+  set_fact:
+    sudoers_file: "/etc/sudoers"
+
+- name: Define libraries in {{ rc_file }}
+  connection: local
+  blockinfile:  
+    create: yes
+    dest: "{{ rc_file }}"
+    block: |
+      export ORACLE_HOME={{ oracle_path }}
+      export OCI_HOME={{ instantclient_path }}
+      export OCI_LIB_DIR={{ instantclient_path }}
+      export OCI_INC_DIR={{ oracle_include_path }}
+      export OCI_INCLUDE_DIR={{ oracle_include_path }}
+      export TNS_ADMIN={{ tns_admin_path }}
+      export {{ lib_path }}={{ oracle_path }}/{{ unzip_path }}
+      PATH=$PATH:{{ oracle_path }}/{{ unzip_path }}
+#      NLS_LANG="American_America.UTF8"
+    insertafter: EOF
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - ORACLE"
+  when: rc_file is defined and shell_type != ""
+
+- name: Define libraries in {{ sudoers_file }}
+  connection: local
+  blockinfile:
+    dest: "{{ sudoers_file }}"
+    block: |
+      Defaults        env_keep += "ORACLE_HOME"
+      Defaults        env_keep += "OCI_HOME"
+      Defaults        env_keep += "OCI_LIB_DIR"
+      Defaults        env_keep += "OCI_INC_DIR"
+      Defaults        env_keep += "OCI_INCLUDE_DIR"
+      Defaults        env_keep += "TNS_ADMIN"
+      Defaults        env_keep += "CLASS_PATH"
+    insertafter: "env_reset"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - ORACLE"
+  become: true
+

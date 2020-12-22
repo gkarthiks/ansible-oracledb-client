@@ -1,0 +1,9 @@
+---
+
+
+- debug: var=client_pkg_dir
+
+- name: Deploy to the server
+  include_tasks: deploy.yml
+  when:  client_pkg_dir != ""
+  tags: [ 'always' ]

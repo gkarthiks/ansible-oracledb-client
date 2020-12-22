@@ -1,0 +1,55 @@
+---
+
+opt_path:               "/opt"
+oracle_path:            "{{ opt_path }}/oracle"
+instantclient_path:     "{{ oracle_path }}/instantclient"
+oracle_include_path:    "{{ oracle_path }}/include"
+tns_admin_path:         "{{ instantclient_path }}/network/admin"
+
+
+arch_folders:
+  x86:              x32
+  x32:              x32
+  x64:              x64
+  x86_64:           x64
+
+dist_folders:
+  Ubuntu:           linux
+  Debian:           linux
+  CentOS:           linux
+  MacOS:            macos
+  Windows:          win
+
+driver_types:
+  linux:            so
+  macos:            dylib
+  win:              dll
+
+lib_paths:
+  linux:            LD_LIBRARY_PATH
+  macos:            DYLD_LIBRARY_PATH
+
+
+versions:
+  macos:
+    11.2.0.4.0:
+      lib:          "11_2"
+      file:         "11.1"
+    12.1.0.2.0:
+      lib:          "12_1"
+      file:         "12.1"
+    12.2.0.1.0:
+      lib:          "12_2"
+      file:         "12.1"
+  linux:
+    12.1.0.2.0:
+      lib:          "12_1"
+      file:         "12.1"
+    12.2.0.1.0:
+      lib:          "12_2"
+      file:         "12.1"
+
+
+packages:
+  - basic
+  - sdk

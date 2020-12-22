@@ -1,0 +1,15 @@
+---
+
+flags:
+  - none
+
+client_pkg_dir:   "{{ role_path }}/files"
+incl_type:        "remote"
+dist:             ""
+arch:             ""
+
+default_versions:
+  linux:          "12.2.0.1.0"
+  macos:          "12.2.0.1.0"
+
+version:          ""
